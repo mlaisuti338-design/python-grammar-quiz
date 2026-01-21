@@ -10,5 +10,32 @@ questions = [
             "a.append(x) の形で使います"
         ],
         "explanation": "append() はリストの末尾に要素を追加します。"
+    },
+    {
+        "question": "printで文字列を表示する正しい書き方は？",
+        "answer": "print('Hello')",
+        "hints": [
+            "print関数を使う",
+            "文字列はクォーテーションで囲む",
+            "シングルクォートでもOK"
+        ]
+    },
+    {
+        "question": "変数 x に 10 を代入する正しい書き方は？",
+        "answer": "x = 10",
+        "hints": [
+            "= は代入を表す",
+            "左に変数名、右に値を書く"
+        ]
+    },
+    {
+        "question": "for文で 0〜4 を繰り返す正しい書き方は？",
+        "answer": "for i in range(5):",
+        "hints": [
+            "range を使う",
+            "range(5) は 0 から 4",
+            "コロンを忘れない"
+        ]
     }
 ]
+
