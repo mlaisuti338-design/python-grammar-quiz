@@ -1,5 +1,6 @@
 questions = [
     {
+        "id": 1,
         "question": "文字列を表示するために空欄に入る関数名は？",
         "code": "______('Hello')",
         "answer": "print",
@@ -9,6 +10,7 @@ questions = [
         ]
     },
     {
+        "id": 2,
         "question": "変数 x に 10 を代入するとき、空欄に入る記号は？",
         "code": "x ____ 10",
         "answer": "=",
@@ -18,6 +20,7 @@ questions = [
         ]
     },
     {
+        "id": 3,
         "question": "for文で 0〜4 を繰り返すとき、空欄に入る関数名は？",
         "code": "for i in _____(5):",
         "answer": "range",
@@ -27,6 +30,7 @@ questions = [
         ]
     },
     {
+        "id": 4,
         "question": "条件分岐で使うキーワードは？",
         "code": "_____ x > 5:",
         "answer": "if",
@@ -36,6 +40,7 @@ questions = [
         ]
     },
     {
+        "id": 5,
         "question": "リスト nums の要素数を取得する関数名は？",
         "code": "_____(nums)",
         "answer": "len",
@@ -45,6 +50,7 @@ questions = [
         ]
     },
     {
+        "id": 6,
         "question": "関数を定義するときに使うキーワードは？",
         "code": "_____ add(a, b):",
         "answer": "def",
@@ -54,6 +60,7 @@ questions = [
         ]
     },
     {
+        "id": 7,
         "question": "リスト nums に要素を追加するときに使うメソッド名は？",
         "code": "nums._____(4)",
         "answer": "append",
@@ -63,6 +70,7 @@ questions = [
         ]
     },
     {
+        "id": 8,
         "question": "辞書 dic からキー 'a' の値を取り出すとき、空欄に入る記号は？",
         "code": "dic_____'a'",
         "answer": "['",
@@ -72,6 +80,7 @@ questions = [
         ]
     },
     {
+        "id": 9,
         "question": "条件が成り立つ間、繰り返す文のキーワードは？",
         "code": "_____ x < 5:",
         "answer": "while",
@@ -81,6 +90,7 @@ questions = [
         ]
     },
     {
+        "id": 10,
         "question": "コメントを書くときに使う記号は？",
         "code": "_____ これはコメントです",
         "answer": "#",
