@@ -1,6 +1,6 @@
 import streamlit as st
 import random
-from questions import questions
+from question import questions
 
 st.title("🧠 Python 文法 穴埋めクイズ")
 
