@@ -1,97 +1,92 @@
 questions = [
     {
-        "question": "printで文字列を表示する正しい書き方は？",
-        "code": "",
-        "answer": "print('Hello')",
+        "question": "文字列を表示するために空欄に入る関数名は？",
+        "code": "______('Hello')",
+        "answer": "print",
         "hints": [
-            "print関数を使う",
-            "文字列はクォーテーションで囲む",
-            "シングルクォートでもOK"
+            "画面に出力する関数",
+            "最初に学ぶことが多い"
         ]
     },
     {
-        "question": "変数 x に 10 を代入する正しい書き方は？",
-        "code": "",
-        "answer": "x = 10",
+        "question": "変数 x に 10 を代入するとき、空欄に入る記号は？",
+        "code": "x ____ 10",
+        "answer": "=",
         "hints": [
-            "= は代入を表す",
-            "左が変数名、右が値"
+            "比較ではない",
+            "代入を表す記号"
         ]
     },
     {
-        "question": "for文で 0〜4 を繰り返す正しい書き方は？",
-        "code": "",
-        "answer": "for i in range(5):",
+        "question": "for文で 0〜4 を繰り返すとき、空欄に入る関数名は？",
+        "code": "for i in _____(5):",
+        "answer": "range",
         "hints": [
-            "range を使う",
-            "range(5) は 0 から 4",
-            "コロンを忘れない"
+            "連続した数値を作る",
+            "0 から始まる"
         ]
     },
     {
-        "question": "if文で x が 5 より大きいときに OK と表示する書き方は？",
-        "code": "",
-        "answer": "if x > 5:\n    print('OK')",
+        "question": "条件分岐で使うキーワードは？",
+        "code": "_____ x > 5:",
+        "answer": "if",
         "hints": [
-            "条件分岐は if",
-            "> は大なり",
-            "コロンとインデントに注意"
+            "条件が真のときに実行",
+            "else とセットで使うこともある"
         ]
     },
     {
-        "question": "リスト nums = [1, 2, 3] の要素数を取得する書き方は？",
-        "code": "",
-        "answer": "len(nums)",
+        "question": "リスト nums の要素数を取得する関数名は？",
+        "code": "_____(nums)",
+        "answer": "len",
         "hints": [
-            "要素数を調べる関数",
-            "len を使う"
+            "長さを調べる",
+            "length の略"
         ]
     },
     {
-        "question": "関数 add(a, b) を定義する正しい書き方は？",
-        "code": "",
-        "answer": "def add(a, b):",
+        "question": "関数を定義するときに使うキーワードは？",
+        "code": "_____ add(a, b):",
+        "answer": "def",
         "hints": [
-            "関数定義は def",
-            "引数はカンマ区切り",
-            "最後にコロン"
+            "define の略",
+            "関数定義の最初に書く"
         ]
     },
     {
-        "question": "リスト nums に 4 を追加する正しい書き方は？",
-        "code": "nums = [1, 2, 3]",
-        "answer": "nums.append(4)",
+        "question": "リスト nums に要素を追加するときに使うメソッド名は？",
+        "code": "nums._____(4)",
+        "answer": "append",
         "hints": [
-            "リストの末尾に追加",
-            "append メソッドを使う"
+            "末尾に追加する",
+            "add ではない"
         ]
     },
     {
-        "question": "辞書 dic = {'a': 1} から値 1 を取得する書き方は？",
-        "code": "dic = {'a': 1}",
-        "answer": "dic['a']",
+        "question": "辞書 dic からキー 'a' の値を取り出すとき、空欄に入る記号は？",
+        "code": "dic_____'a'",
+        "answer": "['",
         "hints": [
-            "キーを指定して取り出す",
-            "角括弧 [] を使う"
+            "リストや辞書で使う",
+            "角括弧を使う"
         ]
     },
     {
-        "question": "while文で x が 5 未満の間繰り返す正しい書き方は？",
-        "code": "",
-        "answer": "while x < 5:",
+        "question": "条件が成り立つ間、繰り返す文のキーワードは？",
+        "code": "_____ x < 5:",
+        "answer": "while",
         "hints": [
-            "繰り返しは while",
-            "< は小なり",
-            "コロンを忘れない"
+            "for ではない",
+            "条件が真の間続く"
         ]
     },
     {
-        "question": "コメントを書く正しい書き方は？",
-        "code": "",
-        "answer": "# コメント",
+        "question": "コメントを書くときに使う記号は？",
+        "code": "_____ これはコメントです",
+        "answer": "#",
         "hints": [
-            "コメントは実行されない",
-            "# を使う"
+            "この行は実行されない",
+            "シャープ記号"
         ]
     }
 ]
