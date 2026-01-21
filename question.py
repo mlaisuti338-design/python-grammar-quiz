@@ -13,29 +13,29 @@ questions = [
     },
     {
         "question": "printで文字列を表示する正しい書き方は？",
+        "code": "",
         "answer": "print('Hello')",
         "hints": [
             "print関数を使う",
-            "文字列はクォーテーションで囲む",
-            "シングルクォートでもOK"
+            "文字列はクォーテーションで囲む"
         ]
     },
     {
         "question": "変数 x に 10 を代入する正しい書き方は？",
+        "code": "",
         "answer": "x = 10",
         "hints": [
             "= は代入を表す",
-            "左に変数名、右に値を書く"
+            "左が変数、右が値"
         ]
     },
     {
         "question": "for文で 0〜4 を繰り返す正しい書き方は？",
+        "code": "for i in range(5):\n    print(i)",
         "answer": "for i in range(5):",
         "hints": [
             "range を使う",
-            "range(5) は 0 から 4",
             "コロンを忘れない"
         ]
     }
 ]
-
