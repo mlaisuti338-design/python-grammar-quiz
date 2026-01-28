@@ -1,5 +1,4 @@
 import streamlit as st
-import random
 from datetime import datetime
 from supabase import create_client
 from question import questions
@@ -12,17 +11,21 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-st.title("🧠 Python 文法 穴埋めクイズ（履歴保存版）")
+st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
 
 # =========================
 # 初期化
 # =========================
-if "current_q" not in st.session_state:
-    st.session_state.current_q = random.choice(questions)
+if "current_index" not in st.session_state:
+    st.session_state.current_index = 0
     st.session_state.hint_index = 0
     st.session_state.answered = False
+    st.session_state.mode = "normal"  # normal / review
 
-q = st.session_state.current_q
+# =========================
+# 問題取得
+# =========================
+q = questions[st.session_state.current_index]
 
 # =========================
 # 問題表示
@@ -30,7 +33,7 @@ q = st.session_state.current_q
 st.write(q["question"])
 st.code(q["code"], language="python")
 
-user_answer = st.text_input("空欄を埋めてください")
+user_answer = st.text_input("空欄を埋めてください", key=st.session_state.current_index)
 
 # =========================
 # ヒント
@@ -50,7 +53,6 @@ if st.button("回答する") and not st.session_state.answered:
 
     is_correct = user_answer.strip() == q["answer"]
 
-    # Supabase に保存
     supabase.table("quiz_logs").insert({
         "question_id": q["id"],
         "is_correct": is_correct,
@@ -66,18 +68,31 @@ if st.button("回答する") and not st.session_state.answered:
     st.info(q["explanation"])
 
 # =========================
-# 次の問題
+# ナビゲーション（前 / 次）
 # =========================
-if st.button("次の問題"):
-    st.session_state.current_q = random.choice(questions)
-    st.session_state.hint_index = 0
-    st.session_state.answered = False
-    st.rerun()
+col1, col2 = st.columns(2)
+
+with col1:
+    if st.button("← 前の問題"):
+        if st.session_state.current_index > 0:
+            st.session_state.current_index -= 1
+            st.session_state.hint_index = 0
+            st.session_state.answered = False
+            st.rerun()
+
+with col2:
+    if st.button("次の問題 →"):
+        if st.session_state.current_index < len(questions) - 1:
+            st.session_state.current_index += 1
+            st.session_state.hint_index = 0
+            st.session_state.answered = False
+            st.rerun()
 
 # =========================
 # 復習モード（不正解履歴）
 # =========================
 st.divider()
+
 if st.button("復習モード"):
     res = supabase.table("quiz_logs") \
         .select("question_id") \
@@ -85,13 +100,13 @@ if st.button("復習モード"):
         .execute()
 
     wrong_ids = {row["question_id"] for row in res.data}
-
-    wrongs = [qq for qq in questions if qq["id"] in wrong_ids]
+    wrongs = [i for i, qq in enumerate(questions) if qq["id"] in wrong_ids]
 
     if wrongs:
-        st.session_state.current_q = random.choice(wrongs)
+        st.session_state.current_index = wrongs[0]
         st.session_state.hint_index = 0
         st.session_state.answered = False
+        st.session_state.mode = "review"
         st.rerun()
     else:
         st.info("復習する問題はありません 🎉")
