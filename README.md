@@ -7,7 +7,7 @@ Streamlit を用いて UI を作成し、Supabase のデータベースに回答
 
 以下のURLから、誰でもアプリを試すことができます。
 
-👉 https://あなたの-streamlit-アプリのURL
+👉https://python-grammar-quiz-nhhesjdvtb2owdrbufznw2.streamlit.app/
 
 ---
 
