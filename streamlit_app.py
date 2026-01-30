@@ -4,10 +4,10 @@ from supabase import create_client
 from question import questions
 import openai
 import json
-import time  # 追加：連打防止用
+import time
 
 # =========================
-# RateLimitError 互換対応
+# RateLimitError 対応
 # =========================
 try:
     from openai.error import RateLimitError
@@ -19,9 +19,20 @@ except ImportError:
 # =========================
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-QUIZ_PROMPT = """
+# =========================
+# Supabase 接続
+# =========================
+supabase = create_client(
+    st.secrets["SUPABASE_URL"],
+    st.secrets["SUPABASE_KEY"]
+)
+
+# =========================
+# プロンプト
+# =========================
+QUIZ_PROMPT_TEMPLATE = """
 あなたはPython初学者向けの教材作成AIです。
-以下の条件で「Python文法の穴埋めクイズ」を5問作成してください。
+以下の条件で「Python文法の穴埋めクイズ」を1問作成してください。
 
 条件:
 - 難易度: 初学者
@@ -46,22 +57,30 @@ JSON形式:
 """
 
 # =========================
-# AIクイズ生成関数
+# AIクイズ生成（1問ずつ）
 # =========================
-def generate_ai_quiz():
-    response = openai.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": QUIZ_PROMPT}],
-        temperature=0.7
-    )
-    content = response.choices[0].message.content
-    content = content.replace("```json", "").replace("```", "").strip()
-    return json.loads(content)
+def generate_one_question():
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": QUIZ_PROMPT_TEMPLATE}],
+            temperature=0.7
+        )
+        content = response.choices[0].message.content
+        content = content.replace("```json", "").replace("```", "").strip()
+        question = json.loads(content)[0]
+        return question
+    except RateLimitError:
+        st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
+        return None
+    except Exception as e:
+        st.error(f"AI生成中にエラーが発生しました: {e}")
+        return None
 
 # =========================
-# AIクイズをSupabaseに保存
+# AI問題をSupabaseに保存
 # =========================
-def save_ai_quiz_to_supabase(quizzes):
+def save_ai_quizzes_to_supabase(quizzes):
     for q in quizzes:
         supabase.table("quiz_questions").insert({
             "question": q["question"],
@@ -72,28 +91,19 @@ def save_ai_quiz_to_supabase(quizzes):
         }).execute()
 
 # =========================
-# Supabase 接続
-# =========================
-supabase = create_client(
-    st.secrets["SUPABASE_URL"],
-    st.secrets["SUPABASE_KEY"]
-)
-
-# =========================
 # Supabaseから問題を取得
 # =========================
 def load_questions_from_supabase():
     try:
         res = supabase.table("quiz_questions").select("*").order("id").execute()
         data = res.data or []
-
         questions_list = []
         for q in data:
             hints = q.get("hints", [])
             if isinstance(hints, str):
                 try:
                     hints = json.loads(hints)
-                except json.JSONDecodeError:
+                except:
                     hints = []
             questions_list.append({
                 "id": q.get("id", 0),
@@ -124,7 +134,10 @@ if "admin_authenticated" not in st.session_state:
     st.session_state.admin_authenticated = False
 
 if "last_ai_generation" not in st.session_state:
-    st.session_state.last_ai_generation = 0  # 最後にAI生成した時間
+    st.session_state.last_ai_generation = 0
+
+if "ai_quizzes_cache" not in st.session_state:
+    st.session_state.ai_quizzes_cache = []
 
 # =========================
 # タイトル
@@ -132,10 +145,9 @@ if "last_ai_generation" not in st.session_state:
 st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
 
 # =========================
-# 管理者パスワード認証
+# 管理者認証
 # =========================
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "secret")
-
 password_input = st.text_input("管理者パスワードを入力", type="password")
 if password_input:
     if password_input == ADMIN_PASSWORD:
@@ -146,35 +158,32 @@ if password_input:
         st.warning("パスワードが間違っています")
 
 # =========================
-# 出題ソース切替UI
+# 出題ソース切替
 # =========================
 source = st.radio("出題する問題セットを選択", ["固定問題", "AI生成問題（Supabase）"])
 if source == "固定問題":
     current_questions = questions
 else:
     current_questions = st.session_state.questions_supabase
-
 st.session_state.current_questions = current_questions
 
 # =========================
-# AI生成ボタン（管理者のみ・連打防止・RateLimitError対応）
+# AI生成ボタン（1問ずつ・管理者のみ・連打防止）
 # =========================
 if st.session_state.admin_authenticated:
     if time.time() - st.session_state.last_ai_generation < 60:
-        st.warning("AI生成は1分に1回までです。少し待ってから再度お試しください。")
+        st.warning("AI生成は1分に1回までです。少し待ってください。")
     else:
-        if st.button("🤖 AIでクイズを生成して保存"):
+        if st.button("🤖 AIで1問生成して保存"):
             st.session_state.last_ai_generation = time.time()
-            with st.spinner("AIがクイズを生成しています..."):
-                try:
-                    quizzes = generate_ai_quiz()
-                    save_ai_quiz_to_supabase(quizzes)
+            with st.spinner("AIが問題を生成しています..."):
+                question = generate_one_question()
+                if question:
+                    st.session_state.ai_quizzes_cache.append(question)
+                    save_ai_quizzes_to_supabase([question])
                     st.session_state.questions_supabase = load_questions_from_supabase()
-                    st.success("AIクイズをSupabaseに保存しました！")
-                except RateLimitError:
-                    st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
-                except Exception as e:
-                    st.error(f"AIクイズ生成中にエラーが発生しました: {e}")
+                    st.success("1問生成してSupabaseに保存しました！")
+
 else:
     st.info("AI生成ボタンは管理者のみ使用可能です")
 
@@ -205,7 +214,7 @@ for i in range(st.session_state.hint_index):
     st.info(f"ヒント {i+1}: {q['hints'][i]}")
 
 # =========================
-# 回答処理（Supabase保存）
+# 回答処理
 # =========================
 if st.button("回答する") and not st.session_state.answered:
     st.session_state.answered = True
@@ -249,7 +258,6 @@ if st.button("復習モード"):
     res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
     wrong_ids = {row["question_id"] for row in res.data}
     wrongs = [i for i, qq in enumerate(st.session_state.current_questions) if qq["id"] in wrong_ids]
-
     if wrongs:
         st.session_state.current_index = wrongs[0]
         st.session_state.hint_index = 0
