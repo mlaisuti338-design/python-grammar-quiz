@@ -76,17 +76,21 @@ else:
     user_answer = st.text_input("空欄を埋めてください", key=idx)
     
     # =========================
-    # ヒント（段階的表示）
+    # ヒント（最大2個まで）
     # =========================
     with st.expander("💡 ヒントを見る"):
-        # ヒントを1つずつ増やすボタン
-        if st.session_state.hint_index < len(q["hints"]):
-            if st.button("次のヒント", key=f"hint_btn_{idx}"):
-                st.session_state.hint_index += 1
+        # 初回展開時に一つ目のヒントを表示
+        if st.session_state.hint_index == 0 and len(q["hints"]) > 0:
+            st.session_state.hint_index = 1
 
-        # 現在のヒントを表示
-        for i in range(st.session_state.hint_index):
+        # 現在のヒントを表示（最大2個）
+        for i in range(min(st.session_state.hint_index, 2)):
             st.info(f"ヒント {i+1}: {q['hints'][i]}")
+
+        # まだ2個目のヒントが出ていなければボタンを表示
+        if st.session_state.hint_index < 2 and len(q["hints"]) > 1:
+            if st.button("次のヒント", key=f"hint_btn_{idx}"):
+                st.session_state.hint_index = 2
     
     # 回答処理
     if st.button("✅ 回答する", key=f"answer_btn_{idx}") and not st.session_state.answered:
