@@ -16,12 +16,13 @@ supabase = create_client(
 # =========================
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
-    st.session_state.hint_index = 0
     st.session_state.answered = False
 if "correct_count" not in st.session_state:
     st.session_state.correct_count = 0
 if "mode" not in st.session_state:
     st.session_state.mode = "normal"  # normal or summary
+if "hint_index_dict" not in st.session_state:
+    st.session_state.hint_index_dict = {}  # 問題ごとのヒント表示数管理
 
 st.session_state.current_questions = questions
 
@@ -50,10 +51,10 @@ if st.session_state.mode == "summary":
     
     if st.button("🏁 トップに戻る"):
         st.session_state.current_index = 0
-        st.session_state.hint_index = 0
         st.session_state.answered = False
         st.session_state.correct_count = 0
         st.session_state.mode = "normal"
+        st.session_state.hint_index_dict = {}
 
 # =========================
 # 通常問題ページ
@@ -76,22 +77,27 @@ else:
     user_answer = st.text_input("空欄を埋めてください", key=idx)
     
     # =========================
-    # ヒント（最大2個まで）
+    # ヒント（問題ごとに独立管理、最大2個まで）
     # =========================
+    hint_index = st.session_state.hint_index_dict.get(idx, 0)  # 現在の問題のヒント数取得
+
     with st.expander("💡 ヒントを見る"):
-        # 初回展開時に一つ目のヒントを表示
-        if st.session_state.hint_index == 0 and len(q["hints"]) > 0:
-            st.session_state.hint_index = 1
+        # 初回展開時に1個目を表示（まだ表示していない場合）
+        if hint_index == 0 and len(q["hints"]) > 0:
+            hint_index = 1
 
         # 現在のヒントを表示（最大2個）
-        for i in range(min(st.session_state.hint_index, 2)):
+        for i in range(min(hint_index, 2)):
             st.info(f"ヒント {i+1}: {q['hints'][i]}")
 
         # まだ2個目のヒントが出ていなければボタンを表示
-        if st.session_state.hint_index < 2 and len(q["hints"]) > 1:
+        if hint_index < 2 and len(q["hints"]) > 1:
             if st.button("次のヒント", key=f"hint_btn_{idx}"):
-                st.session_state.hint_index = 2
-    
+                hint_index = 2
+
+    # 更新して session_state に保存
+    st.session_state.hint_index_dict[idx] = hint_index
+
     # 回答処理
     if st.button("✅ 回答する", key=f"answer_btn_{idx}") and not st.session_state.answered:
         st.session_state.answered = True
@@ -122,14 +128,12 @@ else:
         if st.button("⬅ 前の問題"):
             if idx > 0:
                 st.session_state.current_index -= 1
-                st.session_state.hint_index = 0
                 st.session_state.answered = False
                 st.rerun()
     with col2:
         if st.button("次の問題 ➡"):
             if idx < total_questions - 1:
                 st.session_state.current_index += 1
-                st.session_state.hint_index = 0
                 st.session_state.answered = False
                 st.rerun()
             else:
