@@ -20,8 +20,6 @@ def reset_quiz_state():
     st.session_state.review_questions = []
     st.session_state.correct_count = 0
     st.session_state.answered_flags = [False] * len(st.session_state.total_questions)
-    st.session_state.next_pressed = False
-    st.session_state.prev_pressed = False
 
 # =========================
 # session_state 初期化
@@ -29,12 +27,6 @@ def reset_quiz_state():
 if "total_questions" not in st.session_state:
     st.session_state.total_questions = questions
     reset_quiz_state()
-
-# ボタンフラグ初期化
-if "next_pressed" not in st.session_state:
-    st.session_state.next_pressed = False
-if "prev_pressed" not in st.session_state:
-    st.session_state.prev_pressed = False
 
 # =========================
 # 現在の問題セット
@@ -100,28 +92,23 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
         st.write(q["explanation"])
 
     # =========================
-    # ナビゲーションボタン（フラグ経由で安定化）
+    # ナビゲーションボタン（直接 index 更新）
     # =========================
     col1, col2 = st.columns(2)
     with col1:
         if st.button("⬅ 前の問題"):
-            st.session_state.prev_pressed = True
+            if st.session_state.current_index > 0:
+                st.session_state.current_index -= 1
+                # 戻った問題は再回答可能に
+                st.session_state.answered_flags[st.session_state.current_index] = False
     with col2:
         if st.button("次の問題 ➡"):
-            st.session_state.next_pressed = True
-
-    # フラグに応じて index 更新
-    if st.session_state.next_pressed:
-        if st.session_state.current_index < len(current_questions) - 1:
-            st.session_state.current_index += 1
-        else:
-            st.session_state.mode = "summary"
-        st.session_state.next_pressed = False
-
-    if st.session_state.prev_pressed:
-        if st.session_state.current_index > 0:
-            st.session_state.current_index -= 1
-        st.session_state.prev_pressed = False
+            if st.session_state.current_index < len(current_questions) - 1:
+                st.session_state.current_index += 1
+                # 次の問題は未回答に
+                st.session_state.answered_flags[st.session_state.current_index] = False
+            else:
+                st.session_state.mode = "summary"
 
 # =========================
 # まとめページ
