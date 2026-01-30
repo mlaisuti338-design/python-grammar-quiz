@@ -12,15 +12,22 @@ supabase = create_client(
 )
 
 # =========================
-# session_state 初期化
+# 状態リセット関数
 # =========================
-if "current_index" not in st.session_state:
+def reset_quiz_state():
     st.session_state.current_index = 0
-    st.session_state.answered = False
     st.session_state.mode = "normal"  # normal, review, summary
     st.session_state.review_questions = []
-    st.session_state.total_questions = questions
     st.session_state.correct_count = 0
+    # 各問題ごとの回答済みフラグ
+    st.session_state.answered_flags = [False] * len(st.session_state.total_questions)
+
+# =========================
+# session_state 初期化
+# =========================
+if "total_questions" not in st.session_state:
+    st.session_state.total_questions = questions
+    reset_quiz_state()
 
 # =========================
 # 現在の問題セット
@@ -59,10 +66,11 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
         for i, hint in enumerate(q["hints"], start=1):
             st.info(f"ヒント {i}: {hint}")
 
-    # 回答
-    if st.button("✅ 回答する") and not st.session_state.answered:
-        st.session_state.answered = True
-        is_correct = user_answer.strip() == q["answer"]
+    # 回答ボタン
+    if st.button("✅ 回答する") and not st.session_state.answered_flags[st.session_state.current_index]:
+        st.session_state.answered_flags[st.session_state.current_index] = True
+        # 大文字小文字と空白を無視した判定
+        is_correct = user_answer.strip().lower() == q["answer"].strip().lower()
 
         # Supabaseにログ
         supabase.table("quiz_logs").insert({
@@ -89,14 +97,11 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
     with col1:
         if st.button("⬅ 前の問題") and st.session_state.current_index > 0:
             st.session_state.current_index -= 1
-            st.session_state.answered = False
     with col2:
         if st.button("次の問題 ➡"):
             if st.session_state.current_index < len(current_questions) - 1:
                 st.session_state.current_index += 1
-                st.session_state.answered = False
             else:
-                # 最後の問題を解いたらまとめページへ
                 st.session_state.mode = "summary"
 
 # =========================
@@ -119,24 +124,15 @@ elif st.session_state.mode == "summary":
             if st.button("🔄 復習モード"):
                 st.session_state.current_index = 0
                 st.session_state.mode = "review"
-                st.session_state.answered = False
+                st.session_state.answered_flags = [False] * len(st.session_state.review_questions)
         with col2:
             if st.button("🏁 終了"):
-                # ページ状態リセット
-                st.session_state.mode = "normal"
-                st.session_state.current_index = 0
-                st.session_state.answered = False
-                st.session_state.review_questions = []
-                st.session_state.correct_count = 0
+                reset_quiz_state()
                 st.success("トップページに戻りました")
     else:
         st.info("全問正解です！お疲れさまでした 🎉")
         if st.button("🏁 終了"):
-            st.session_state.mode = "normal"
-            st.session_state.current_index = 0
-            st.session_state.answered = False
-            st.session_state.review_questions = []
-            st.session_state.correct_count = 0
+            reset_quiz_state()
             st.success("トップページに戻りました")
 
 # =========================
@@ -145,9 +141,5 @@ elif st.session_state.mode == "summary":
 elif st.session_state.mode == "review" and not current_questions:
     st.info("復習モードの問題はありません 🎉")
     if st.button("🏁 終了"):
-        st.session_state.mode = "normal"
-        st.session_state.current_index = 0
-        st.session_state.answered = False
-        st.session_state.review_questions = []
-        st.session_state.correct_count = 0
+        reset_quiz_state()
         st.success("トップページに戻りました")
