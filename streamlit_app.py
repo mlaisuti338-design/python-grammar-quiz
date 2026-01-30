@@ -4,6 +4,13 @@ from supabase import create_client
 from question import questions
 import openai
 import json
+
+# 旧互換用 RateLimitError 捕捉
+try:
+    from openai.error import RateLimitError
+except ImportError:
+    RateLimitError = Exception  # 古いバージョンでは Exception で代用
+
 from openai.error import RateLimitError
 
 # =========================
