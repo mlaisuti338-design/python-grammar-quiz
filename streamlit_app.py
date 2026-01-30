@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from supabase import create_client
-from question import questions  # 固定問題リスト
+from question import questions # 固定問題リスト
 
 # =========================
 # Supabase 接続
