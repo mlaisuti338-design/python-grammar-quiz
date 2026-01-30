@@ -82,27 +82,26 @@ else:
     # =========================
     # ヒント（最大2個 + 初回展開1個目表示 + 次のヒントボタン）
     # =========================
-    # 初期値セット
+    # 初期値取得
     hint_index = st.session_state.hint_index_dict.get(idx, 0)
     hint_expanded = st.session_state.hint_expanded_dict.get(idx, False)
 
     # expanderの開閉状態を制御
     with st.expander("💡 ヒントを見る", expanded=hint_expanded):
-        # expanderが開かれた瞬間のフラグ
+        # 次のヒントボタン（2個目未表示かつ存在する場合のみ）
+        if hint_index < 2 and len(q["hints"]) > 1:
+            if st.button("次のヒント", key=f"hint_btn_{idx}"):
+                hint_index = 2
+
+        # 初回展開時の1個目表示（ボタン処理の後に行うことで上書きされない）
         if not hint_expanded:
             hint_expanded = True
-            # 初回展開で1個目のヒント表示
             if hint_index == 0 and len(q["hints"]) > 0:
                 hint_index = 1
 
         # 現在のヒントを表示（最大2個）
         for i in range(min(hint_index, 2)):
             st.info(f"ヒント {i+1}: {q['hints'][i]}")
-
-        # 次のヒントボタン（2個目未表示かつ存在する場合のみ）
-        if hint_index < 2 and len(q["hints"]) > 1:
-            if st.button("次のヒント", key=f"hint_btn_{idx}"):
-                hint_index = 2
 
     # session_stateに保存
     st.session_state.hint_index_dict[idx] = hint_index
@@ -139,7 +138,7 @@ else:
             if idx > 0:
                 st.session_state.current_index -= 1
                 st.session_state.answered = False
-                # 前の問題に戻るときはhint_expandedをリセット
+                # 前の問題のヒント欄を閉じる
                 st.session_state.hint_expanded_dict[idx-1] = False
                 st.rerun()
     with col2:
