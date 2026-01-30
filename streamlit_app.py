@@ -36,6 +36,14 @@ if not st.session_state.current_questions:
 q = st.session_state.current_questions[st.session_state.current_index]
 
 # =========================
+# 進捗バー
+# =========================
+total_questions = len(st.session_state.current_questions)
+progress_value = (st.session_state.current_index + 1) / total_questions
+st.progress(progress_value)
+st.markdown(f"**問題 {st.session_state.current_index + 1} / {total_questions}**")
+
+# =========================
 # 問題表示
 # =========================
 st.write(q["question"])
