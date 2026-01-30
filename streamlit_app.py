@@ -2,6 +2,12 @@ import streamlit as st
 from datetime import datetime
 from supabase import create_client
 from question import questions
+import openai
+
+# =========================
+# OpenAI 設定
+# =========================
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # =========================
 # Supabase 接続
