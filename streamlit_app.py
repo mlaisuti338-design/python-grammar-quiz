@@ -28,8 +28,8 @@ st.session_state.current_questions = questions
 # =========================
 # タイトル
 # =========================
-st.markdown("<h1 style='text-align:center; color:#4B8BBE; font-size:36px;'>🧠 Python 文法クイズ</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align:center; font-size:18px; color:gray;'>穴埋め形式で文法を学習しよう！</p>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center; color:#4B8BBE;'>🧠 Python 文法クイズ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:gray;'>穴埋め形式で文法を学習しよう！</p>", unsafe_allow_html=True)
 st.divider()
 
 # =========================
@@ -41,7 +41,7 @@ if st.session_state.mode == "summary":
     rate = round(correct / total * 100, 1)
     
     st.markdown("<h2 style='text-align:center; color:#FF5733;'>📊 結果発表</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align:center; font-size:18px;'>正解数: {correct} / {total} ({rate}%)</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align:center;'>正解数: {correct} / {total} ({rate}%)</p>", unsafe_allow_html=True)
     st.progress(rate / 100)
 
     if correct == total:
@@ -68,27 +68,27 @@ else:
     st.progress(progress_value)
     st.markdown(f"<p style='text-align:center;'>問題 {idx + 1} / {total_questions} ({int(progress_value*100)}%)</p>", unsafe_allow_html=True)
     
-    # 問題表示
-    with st.container():
-        st.markdown(f"<h3 style='color:#FF6F61;'>{q['question']}</h3>", unsafe_allow_html=True)
-        st.code(q["code"], language="python")
+    # 問題文は元のデザイン
+    st.write(q["question"])
+    st.code(q["code"], language="python")
     
     # 回答入力
     user_answer = st.text_input("空欄を埋めてください", key=idx)
     
-    # ヒント
-    if st.button("💡 ヒントを見る"):
+    # ヒントを折りたたみ
+    with st.expander("💡 ヒントを見る"):
+        for i in range(st.session_state.hint_index):
+            st.info(f"ヒント {i+1}: {q['hints'][i]}")
+    if st.button("ヒントを見る"):
         if st.session_state.hint_index < len(q["hints"]):
             st.session_state.hint_index += 1
-    for i in range(st.session_state.hint_index):
-        st.info(f"ヒント {i+1}: {q['hints'][i]}")
     
     # 回答処理
     if st.button("✅ 回答する") and not st.session_state.answered:
         st.session_state.answered = True
         is_correct = user_answer.strip() == q["answer"]
 
-        # Supabaseログ保存
+        # Supabase にログを保存
         try:
             supabase.table("quiz_logs").insert({
                 "question_id": q["id"],
@@ -104,9 +104,10 @@ else:
         else:
             st.error("不正解 😢")
             st.write("正解:", q["answer"])
-        st.info(q["explanation"])
+        with st.expander("📖 解説を見る"):
+            st.write(q["explanation"])
     
-    # ナビゲーション
+    # ナビゲーションボタン
     col1, col2 = st.columns(2)
     with col1:
         if st.button("⬅ 前の問題"):
@@ -123,6 +124,5 @@ else:
                 st.session_state.answered = False
                 st.rerun()
             else:
-                # 最後の問題ならまとめページへ
                 st.session_state.mode = "summary"
                 st.rerun()
