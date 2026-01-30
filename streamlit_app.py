@@ -42,9 +42,7 @@ JSON形式:
 def generate_ai_quiz():
     response = openai.ChatCompletion.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": QUIZ_PROMPT}
-        ],
+        messages=[{"role": "user", "content": QUIZ_PROMPT}],
         temperature=0.7
     )
 
@@ -53,8 +51,9 @@ def generate_ai_quiz():
 
     return json.loads(content)
 
+
 # =========================
-# AIクイズをSupabaseに保存（③-2 ここ）
+# AIクイズをSupabaseに保存
 # =========================
 def save_ai_quiz_to_supabase(quizzes):
     for q in quizzes:
@@ -66,6 +65,7 @@ def save_ai_quiz_to_supabase(quizzes):
             "explanation": q["explanation"]
         }).execute()
 
+
 # =========================
 # Supabase 接続
 # =========================
@@ -74,66 +74,57 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
+
 # =========================
 # Supabaseから問題を取得
 # =========================
 def load_questions_from_supabase():
-    res = supabase.table("quiz_questions") \
-        .select("*") \
-        .order("id") \
-        .execute()
+    try:
+        res = supabase.table("quiz_questions").select("*").order("id").execute()
+        data = res.data or []
 
-    # Supabaseの配列型(hints)はそのままPythonのlistとして返る場合と文字列になる場合があるので調整
-    questions = []
-    for q in res.data:
-        hints = q["hints"]
-        # 文字列になっていた場合はJSONとしてロード
-        if isinstance(hints, str):
-            hints = json.loads(hints)
-        questions.append({
-            "id": q["id"],
-            "question": q["question"],
-            "code": q["code"],
-            "answer": q["answer"],
-            "hints": hints,
-            "explanation": q["explanation"]
-        })
-    return questions
+        questions_list = []
+        for q in data:
+            hints = q.get("hints", [])
+            if isinstance(hints, str):
+                try:
+                    hints = json.loads(hints)
+                except json.JSONDecodeError:
+                    hints = []
+            questions_list.append({
+                "id": q.get("id", 0),
+                "question": q.get("question", ""),
+                "code": q.get("code", ""),
+                "answer": q.get("answer", ""),
+                "hints": hints,
+                "explanation": q.get("explanation", "")
+            })
+        return questions_list
+    except Exception as e:
+        st.error(f"Supabase から問題を取得できませんでした: {e}")
+        return []
 
+
+# =========================
+# タイトル
+# =========================
 st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
+
 
 # =========================
 # 出題ソース切替UI
 # =========================
 source = st.radio("出題する問題セットを選択", ["固定問題", "AI生成問題（Supabase）"])
 
-if source == "固定問題":
-    current_questions = questions
-else:
-    current_questions = st.session_state.questions_supabase
-
-# session_stateのcurrent_questionsにセット
-st.session_state.current_questions = current_questions
-
 
 # =========================
-# 🤖 AI生成＆保存ボタン（③-2 本体）
-# =========================
-if st.button("🤖 AIでクイズを生成して保存"):
-    with st.spinner("AIがクイズを生成しています..."):
-        quizzes = generate_ai_quiz()
-        save_ai_quiz_to_supabase(quizzes)
-
-    st.success("AIクイズをSupabaseに保存しました！")
-
-# =========================
-# 初期化
+# session_state 初期化
 # =========================
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
     st.session_state.hint_index = 0
     st.session_state.answered = False
-    st.session_state.mode = "normal"
+    st.session_state.mode = "normal"  # normal / review
 
 # =========================
 # session_state にSupabase問題をロード
@@ -141,23 +132,47 @@ if "current_index" not in st.session_state:
 if "questions_supabase" not in st.session_state:
     st.session_state.questions_supabase = load_questions_from_supabase()
 
-# =========================
-# 問題取得（今はまだ question.py）
-# =========================
 
+# =========================
+# current_questionsにセット
+# =========================
+if source == "固定問題":
+    current_questions = questions
+else:
+    current_questions = st.session_state.questions_supabase
+
+st.session_state.current_questions = current_questions
+
+
+# =========================
+# 🤖 AI生成＆保存ボタン
+# =========================
+if st.button("🤖 AIでクイズを生成して保存"):
+    with st.spinner("AIがクイズを生成しています..."):
+        quizzes = generate_ai_quiz()
+        save_ai_quiz_to_supabase(quizzes)
+        # 保存後にsession_stateを更新
+        st.session_state.questions_supabase = load_questions_from_supabase()
+    st.success("AIクイズをSupabaseに保存しました！")
+
+
+# =========================
+# 問題取得
+# =========================
 if not st.session_state.current_questions:
     st.warning("現在、出題可能な問題がありません。まずAIで問題を生成してください。")
-    st.stop()  # ここで処理を止める
+    st.stop()
 
 q = st.session_state.current_questions[st.session_state.current_index]
+
 
 # =========================
 # 問題表示
 # =========================
 st.write(q["question"])
 st.code(q["code"], language="python")
-
 user_answer = st.text_input("空欄を埋めてください", key=st.session_state.current_index)
+
 
 # =========================
 # ヒント
@@ -168,6 +183,7 @@ if st.button("ヒントを見る"):
 
 for i in range(st.session_state.hint_index):
     st.info(f"ヒント {i+1}: {q['hints'][i]}")
+
 
 # =========================
 # 回答処理（Supabase保存）
@@ -191,8 +207,9 @@ if st.button("回答する") and not st.session_state.answered:
 
     st.info(q["explanation"])
 
+
 # =========================
-# ナビゲーション
+# ナビゲーション（前 / 次）
 # =========================
 col1, col2 = st.columns(2)
 
@@ -206,11 +223,12 @@ with col1:
 
 with col2:
     if st.button("次の問題 →"):
-        if st.session_state.current_index < len(questions) - 1:
+        if st.session_state.current_index < len(st.session_state.current_questions) - 1:
             st.session_state.current_index += 1
             st.session_state.hint_index = 0
             st.session_state.answered = False
             st.rerun()
+
 
 # =========================
 # 復習モード
@@ -218,13 +236,9 @@ with col2:
 st.divider()
 
 if st.button("復習モード"):
-    res = supabase.table("quiz_logs") \
-        .select("question_id") \
-        .eq("is_correct", False) \
-        .execute()
-
+    res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
     wrong_ids = {row["question_id"] for row in res.data}
-    wrongs = [i for i, qq in enumerate(questions) if qq["id"] in wrong_ids]
+    wrongs = [i for i, qq in enumerate(st.session_state.current_questions) if qq["id"] in wrong_ids]
 
     if wrongs:
         st.session_state.current_index = wrongs[0]
