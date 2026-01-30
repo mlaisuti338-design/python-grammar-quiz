@@ -18,7 +18,6 @@ if "current_index" not in st.session_state:
     st.session_state.current_index = 0
     st.session_state.hint_index = 0
     st.session_state.answered = False
-    st.session_state.mode = "normal"
 
 st.session_state.current_questions = questions  # 固定問題のみ使用
 
@@ -95,25 +94,3 @@ with col2:
             st.session_state.hint_index = 0
             st.session_state.answered = False
             st.rerun()
-
-# =========================
-# 復習モード（不正解問題のみ）
-# =========================
-st.divider()
-if st.button("復習モード"):
-    try:
-        # Supabaseのログから間違えた問題IDを取得
-        res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
-        wrong_ids = {row["question_id"] for row in res.data}
-        wrongs = [i for i, qq in enumerate(st.session_state.current_questions) if qq["id"] in wrong_ids]
-
-        if wrongs:
-            st.session_state.current_index = wrongs[0]
-            st.session_state.hint_index = 0
-            st.session_state.answered = False
-            st.session_state.mode = "review"
-            st.rerun()
-        else:
-            st.info("復習する問題はありません 🎉")
-    except Exception as e:
-        st.error(f"復習モード取得でエラー: {e}")
