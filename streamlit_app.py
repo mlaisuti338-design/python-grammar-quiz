@@ -144,6 +144,11 @@ if "questions_supabase" not in st.session_state:
 # =========================
 # 問題取得（今はまだ question.py）
 # =========================
+
+if not st.session_state.current_questions:
+    st.warning("現在、出題可能な問題がありません。まずAIで問題を生成してください。")
+    st.stop()  # ここで処理を止める
+
 q = st.session_state.current_questions[st.session_state.current_index]
 
 # =========================
