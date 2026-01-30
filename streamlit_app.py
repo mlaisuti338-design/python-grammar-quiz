@@ -124,13 +124,24 @@ elif st.session_state.mode == "summary":
                 st.session_state.current_index = 0
                 st.session_state.mode = "review"
                 st.session_state.answered = False
-                st.rerun()
+                st.experimental_rerun()
         with col2:
             if st.button("🏁 終了"):
+                #ページ状態リセット
+                st.session_state.mode = "normal"
+                st.session_state.current_index = 0
+                st.session_state.answered = False
+                st.session_state.review_questions = []
+                st.session_state.correct_count = 0
                 st.experimental_rerun()  # トップに戻す
     else:
         st.info("全問正解です！お疲れさまでした 🎉")
         if st.button("🏁 終了"):
+            st.session_state.mode = "normal"
+            st.session_state.current_index = 0
+            st.session_state.answered = False
+            st.session_state.review_questions = []
+            st.session_state.correct_count = 0
             st.experimental_rerun()
 
 # =========================
