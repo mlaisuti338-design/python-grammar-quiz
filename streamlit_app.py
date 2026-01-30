@@ -22,7 +22,9 @@ if "correct_count" not in st.session_state:
 if "mode" not in st.session_state:
     st.session_state.mode = "normal"  # normal or summary
 if "hint_index_dict" not in st.session_state:
-    st.session_state.hint_index_dict = {}  # 問題ごとのヒント表示数管理
+    st.session_state.hint_index_dict = {}  # 問題ごとのヒント表示数
+if "hint_expanded_dict" not in st.session_state:
+    st.session_state.hint_expanded_dict = {}  # 問題ごとのexpander開閉状態
 
 st.session_state.current_questions = questions
 
@@ -55,6 +57,7 @@ if st.session_state.mode == "summary":
         st.session_state.correct_count = 0
         st.session_state.mode = "normal"
         st.session_state.hint_index_dict = {}
+        st.session_state.hint_expanded_dict = {}
 
 # =========================
 # 通常問題ページ
@@ -77,26 +80,33 @@ else:
     user_answer = st.text_input("空欄を埋めてください", key=idx)
     
     # =========================
-    # ヒント（問題ごとに独立管理、最大2個まで）
+    # ヒント（最大2個 + 初回展開1個目表示 + 次のヒントボタン）
     # =========================
-    hint_index = st.session_state.hint_index_dict.get(idx, 0)  # 現在の問題のヒント数取得
+    # 初期値セット
+    hint_index = st.session_state.hint_index_dict.get(idx, 0)
+    hint_expanded = st.session_state.hint_expanded_dict.get(idx, False)
 
-    with st.expander("💡 ヒントを見る"):
-        # 初回展開時に1個目を表示（まだ表示していない場合）
-        if hint_index == 0 and len(q["hints"]) > 0:
-            hint_index = 1
+    # expanderの開閉状態を制御
+    with st.expander("💡 ヒントを見る", expanded=hint_expanded):
+        # expanderが開かれた瞬間のフラグ
+        if not hint_expanded:
+            hint_expanded = True
+            # 初回展開で1個目のヒント表示
+            if hint_index == 0 and len(q["hints"]) > 0:
+                hint_index = 1
 
         # 現在のヒントを表示（最大2個）
         for i in range(min(hint_index, 2)):
             st.info(f"ヒント {i+1}: {q['hints'][i]}")
 
-        # まだ2個目のヒントが出ていなければボタンを表示
+        # 次のヒントボタン（2個目未表示かつ存在する場合のみ）
         if hint_index < 2 and len(q["hints"]) > 1:
             if st.button("次のヒント", key=f"hint_btn_{idx}"):
                 hint_index = 2
 
-    # 更新して session_state に保存
+    # session_stateに保存
     st.session_state.hint_index_dict[idx] = hint_index
+    st.session_state.hint_expanded_dict[idx] = hint_expanded
 
     # 回答処理
     if st.button("✅ 回答する", key=f"answer_btn_{idx}") and not st.session_state.answered:
@@ -129,12 +139,16 @@ else:
             if idx > 0:
                 st.session_state.current_index -= 1
                 st.session_state.answered = False
+                # 前の問題に戻るときはhint_expandedをリセット
+                st.session_state.hint_expanded_dict[idx-1] = False
                 st.rerun()
     with col2:
         if st.button("次の問題 ➡"):
             if idx < total_questions - 1:
                 st.session_state.current_index += 1
                 st.session_state.answered = False
+                # 次の問題に移るときは自動でヒント欄を閉じる
+                st.session_state.hint_expanded_dict[st.session_state.current_index] = False
                 st.rerun()
             else:
                 st.session_state.mode = "summary"
