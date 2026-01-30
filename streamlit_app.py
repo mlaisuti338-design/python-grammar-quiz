@@ -100,18 +100,11 @@ else:
     with st.expander("📖 解説を見る"):
         st.write(q["explanation"])
     
-    # ナビゲーション
-    col1, col2 = st.columns([1,1])
-    
-    # 前の問題
-    with col1:
-        if st.button("⬅ 前の問題") and st.session_state.current_index > 0:
-            st.session_state.current_index -= 1
-    
+    # =========================
     # 次の問題
-    with col2:
-        if st.button("次の問題 ➡"):
-            if st.session_state.current_index < len(current_questions) - 1:
-                st.session_state.current_index += 1
-            else:
-                st.session_state.mode = "summary"
+    # =========================
+    if st.button("次の問題 ➡"):
+        if st.session_state.current_index < len(current_questions) - 1:
+            st.session_state.current_index += 1
+        else:
+            st.session_state.mode = "summary"
