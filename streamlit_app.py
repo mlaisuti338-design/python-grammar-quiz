@@ -21,7 +21,7 @@ if "current_index" not in st.session_state:
 if "answered_flags" not in st.session_state:
     st.session_state.answered_flags = [False] * len(st.session_state.questions_supabase)
 if "mode" not in st.session_state:
-    st.session_state.mode = "normal"
+    st.session_state.mode = "normal"  # normal, summary
 if "correct_count" not in st.session_state:
     st.session_state.correct_count = 0
 
@@ -46,11 +46,11 @@ if st.session_state.mode == "summary":
     st.markdown(f"**正解率:** {rate}%")
     st.progress(rate / 100)
     if st.button("🏁 終了"):
+        # 全状態リセット
         st.session_state.current_index = 0
         st.session_state.mode = "normal"
         st.session_state.answered_flags = [False] * len(current_questions)
         st.session_state.correct_count = 0
-        st.experimental_rerun()
 
 else:
     # =========================
@@ -80,6 +80,7 @@ else:
     if st.button("✅ 回答する") and not st.session_state.answered_flags[st.session_state.current_index]:
         st.session_state.answered_flags[st.session_state.current_index] = True
         is_correct = user_answer.strip().lower() == q["answer"].strip().lower()
+        # Supabase ログ保存
         supabase.table("quiz_logs").insert({
             "question_id": q["id"],
             "is_correct": is_correct,
@@ -105,17 +106,13 @@ else:
     with col1:
         if st.button("⬅ 前の問題") and st.session_state.current_index > 0:
             st.session_state.current_index -= 1
-            if st.session_state.current_index < len(st.session_state.answered_flags):
-                st.session_state.answered_flags[st.session_state.current_index] = False
-            st.experimental_rerun()
+            st.session_state.answered_flags[st.session_state.current_index] = False
 
     # 次の問題
     with col2:
         if st.button("次の問題 ➡"):
             if st.session_state.current_index < len(current_questions) - 1:
                 st.session_state.current_index += 1
-                if st.session_state.current_index < len(st.session_state.answered_flags):
-                    st.session_state.answered_flags[st.session_state.current_index] = False
+                st.session_state.answered_flags[st.session_state.current_index] = False
             else:
                 st.session_state.mode = "summary"
-            st.experimental_rerun()
