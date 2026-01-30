@@ -23,7 +23,7 @@ if "answered_flags" not in st.session_state:
 if "correct_count" not in st.session_state:
     st.session_state.correct_count = 0
 if "mode" not in st.session_state:
-    st.session_state.mode = "normal"  # normal, summary
+    st.session_state.mode = "normal"  # normal or summary
 
 current_questions = st.session_state.questions
 
@@ -48,7 +48,7 @@ if st.session_state.mode == "summary":
     st.progress(rate / 100)
     
     if st.button("🏁 終了"):
-        # 状態リセットしてトップページに戻る
+        # 状態リセット
         st.session_state.current_index = 0
         st.session_state.answered_flags = [False] * len(current_questions)
         st.session_state.correct_count = 0
@@ -70,7 +70,7 @@ else:
     st.markdown(f"### {q['question']}")
     st.code(q["code"], language="python")
     
-    # text_input はユニーク key を使用
+    # text_input key を idx に紐づけ
     user_answer = st.text_input("空欄を埋めてください", key=f"answer_{idx}")
     
     # ヒント
@@ -78,12 +78,12 @@ else:
         for i, hint in enumerate(q["hints"], start=1):
             st.info(f"ヒント {i}: {hint}")
     
-    # 回答ボタン
+    # 回答
     if st.button("✅ 回答する") and not st.session_state.answered_flags[idx]:
         st.session_state.answered_flags[idx] = True
         is_correct = user_answer.strip().lower() == q["answer"].strip().lower()
         
-        # Supabaseにログ保存
+        # Supabase ログ保存
         supabase.table("quiz_logs").insert({
             "question_id": q["id"],
             "is_correct": is_correct,
@@ -104,7 +104,7 @@ else:
     # 次の問題
     # =========================
     if st.button("次の問題 ➡"):
-        if st.session_state.current_index < len(current_questions) - 1:
+        if idx < len(current_questions) - 1:
             st.session_state.current_index += 1
         else:
             st.session_state.mode = "summary"
