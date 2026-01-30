@@ -21,7 +21,6 @@ if "current_index" not in st.session_state:
     st.session_state.review_questions = []
     st.session_state.total_questions = questions
     st.session_state.correct_count = 0
-    st.session_state.logs_buffer = []
 
 # =========================
 # 現在の問題セット
@@ -36,36 +35,42 @@ else:
 # =========================
 # タイトル
 # =========================
-st.title("🧠 Python 文法 穴埋めクイズ（軽量ヒント版）")
+st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>🧠 Python 文法クイズ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-size:16px;'>穴埋め形式でPython文法を学習しよう！</p>", unsafe_allow_html=True)
 st.divider()
 
 # =========================
 # 通常・復習モードの問題表示
 # =========================
 if st.session_state.mode in ["normal", "review"] and current_questions:
-    # 進捗バー
     progress = (st.session_state.current_index + 1) / len(current_questions)
     st.progress(progress)
     st.markdown(f"**問題 {st.session_state.current_index + 1} / {len(current_questions)}**")
 
     q = current_questions[st.session_state.current_index]
 
-    st.write(q["question"])
+    st.markdown(f"### {q['question']}")
     st.code(q["code"], language="python")
 
     user_answer = st.text_input("空欄を埋めてください", key=st.session_state.current_index)
 
-    # ヒント（1個だけ）
-    if st.button("💡 ヒントを見る") and not st.session_state.answered:
-        if q["hints"]:
-            st.info(f"ヒント: {q['hints'][0]}")
+    # ヒント
+    with st.expander("💡 ヒントを見る"):
+        for i, hint in enumerate(q["hints"], start=1):
+            st.info(f"ヒント {i}: {hint}")
 
-    # 回答処理
+    # 回答
     if st.button("✅ 回答する") and not st.session_state.answered:
         st.session_state.answered = True
         is_correct = user_answer.strip() == q["answer"]
 
-        # 正解カウント
+        # Supabaseにログ
+        supabase.table("quiz_logs").insert({
+            "question_id": q["id"],
+            "is_correct": is_correct,
+            "answered_at": datetime.utcnow().isoformat()
+        }).execute()
+
         if is_correct:
             st.success("🎉 正解！")
             st.session_state.correct_count += 1
@@ -75,12 +80,9 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
             if q not in st.session_state.review_questions:
                 st.session_state.review_questions.append(q)
 
-        # ログをバッファに追加
-        st.session_state.logs_buffer.append({
-            "question_id": q["id"],
-            "is_correct": is_correct,
-            "answered_at": datetime.utcnow().isoformat()
-        })
+    # 解説
+    with st.expander("📖 解説を見る"):
+        st.write(q["explanation"])
 
     # ナビゲーション
     col1, col2 = st.columns(2)
@@ -101,17 +103,11 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
 # まとめページ
 # =========================
 elif st.session_state.mode == "summary":
-    # まとめページでSupabaseにまとめて書き込み
-    if st.session_state.logs_buffer:
-        for log in st.session_state.logs_buffer:
-            supabase.table("quiz_logs").insert(log).execute()
-        st.session_state.logs_buffer = []
-
     total = len(st.session_state.total_questions)
     correct = st.session_state.correct_count
     rate = round(correct / total * 100, 1)
 
-    st.markdown("## 📊 結果発表")
+    st.markdown("<h2 style='text-align:center; color:#FF5733;'>📊 結果発表</h2>", unsafe_allow_html=True)
     st.markdown(f"**正解数:** {correct} / {total}")
     st.markdown(f"**正解率:** {rate}%")
     st.progress(rate / 100)
