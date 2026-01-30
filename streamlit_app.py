@@ -114,18 +114,32 @@ if "current_index" not in st.session_state:
     st.session_state.current_index = 0
     st.session_state.hint_index = 0
     st.session_state.answered = False
-    st.session_state.mode = "normal"  # normal / review
+    st.session_state.mode = "normal"
 
-# =========================
-# session_state にSupabase問題をロード
-# =========================
 if "questions_supabase" not in st.session_state:
     st.session_state.questions_supabase = load_questions_from_supabase()
+
+if "admin_authenticated" not in st.session_state:
+    st.session_state.admin_authenticated = False
 
 # =========================
 # タイトル
 # =========================
 st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
+
+# =========================
+# 管理者パスワード認証
+# =========================
+ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "secret")  # secrets に設定推奨
+
+password_input = st.text_input("管理者パスワードを入力", type="password")
+if password_input:
+    if password_input == ADMIN_PASSWORD:
+        st.session_state.admin_authenticated = True
+        st.success("管理者認証に成功しました")
+    else:
+        st.session_state.admin_authenticated = False
+        st.warning("パスワードが間違っています")
 
 # =========================
 # 出題ソース切替UI
@@ -139,19 +153,22 @@ else:
 st.session_state.current_questions = current_questions
 
 # =========================
-# AI生成ボタン（RateLimitError対応）
+# AI生成ボタン（管理者のみ・RateLimitError対応）
 # =========================
-if st.button("🤖 AIでクイズを生成して保存"):
-    with st.spinner("AIがクイズを生成しています..."):
-        try:
-            quizzes = generate_ai_quiz()
-            save_ai_quiz_to_supabase(quizzes)
-            st.session_state.questions_supabase = load_questions_from_supabase()
-            st.success("AIクイズをSupabaseに保存しました！")
-        except RateLimitError:
-            st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
-        except Exception as e:
-            st.error(f"AIクイズ生成中にエラーが発生しました: {e}")
+if st.session_state.admin_authenticated:
+    if st.button("🤖 AIでクイズを生成して保存"):
+        with st.spinner("AIがクイズを生成しています..."):
+            try:
+                quizzes = generate_ai_quiz()
+                save_ai_quiz_to_supabase(quizzes)
+                st.session_state.questions_supabase = load_questions_from_supabase()
+                st.success("AIクイズをSupabaseに保存しました！")
+            except RateLimitError:
+                st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
+            except Exception as e:
+                st.error(f"AIクイズ生成中にエラーが発生しました: {e}")
+else:
+    st.info("AI生成ボタンは管理者のみ使用可能です")
 
 # =========================
 # 問題取得
@@ -208,7 +225,6 @@ with col1:
             st.session_state.hint_index = 0
             st.session_state.answered = False
             st.rerun()
-
 with col2:
     if st.button("次の問題 →"):
         if st.session_state.current_index < len(st.session_state.current_questions) - 1:
