@@ -63,7 +63,7 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
     if st.button("✅ 回答する") and not st.session_state.answered:
         st.session_state.answered = True
         is_correct = user_answer.strip() == q["answer"]
-        
+
         # Supabaseにログ
         supabase.table("quiz_logs").insert({
             "question_id": q["id"],
@@ -87,21 +87,17 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
     # ナビゲーション
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("⬅ 前の問題"):
-            if st.session_state.current_index > 0:
-                st.session_state.current_index -= 1
-                st.session_state.answered = False
-                st.experimental_rerun()
+        if st.button("⬅ 前の問題") and st.session_state.current_index > 0:
+            st.session_state.current_index -= 1
+            st.session_state.answered = False
     with col2:
         if st.button("次の問題 ➡"):
             if st.session_state.current_index < len(current_questions) - 1:
                 st.session_state.current_index += 1
                 st.session_state.answered = False
-                st.experimental_rerun()
             else:
                 # 最後の問題を解いたらまとめページへ
                 st.session_state.mode = "summary"
-                st.experimental_rerun()
 
 # =========================
 # まとめページ
@@ -124,10 +120,9 @@ elif st.session_state.mode == "summary":
                 st.session_state.current_index = 0
                 st.session_state.mode = "review"
                 st.session_state.answered = False
-                st.experimental_rerun()
         with col2:
             if st.button("🏁 終了"):
-                # ページ状態リセット（rerun しない）
+                # ページ状態リセット
                 st.session_state.mode = "normal"
                 st.session_state.current_index = 0
                 st.session_state.answered = False
