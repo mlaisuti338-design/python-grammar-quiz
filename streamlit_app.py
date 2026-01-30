@@ -40,10 +40,10 @@ JSON形式:
 # AIクイズ生成関数
 # =========================
 def generate_ai_quiz():
-    response = openai.ChatCompletion.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": QUIZ_PROMPT}],
-        temperature=0.7
+    response = openai.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": QUIZ_PROMPT}],
+    temperature=0.7
     )
 
     content = response.choices[0].message.content
