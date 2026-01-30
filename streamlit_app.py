@@ -5,13 +5,13 @@ from question import questions
 import openai
 import json
 
-# 旧互換用 RateLimitError 捕捉
+# =========================
+# RateLimitError 互換対応（古い SDK 対応）
+# =========================
 try:
     from openai.error import RateLimitError
 except ImportError:
-    RateLimitError = Exception  # 古いバージョンでは Exception で代用
-
-from openai.error import RateLimitError
+    RateLimitError = Exception  # 古いSDKではExceptionで代用
 
 # =========================
 # OpenAI 設定
@@ -53,12 +53,9 @@ def generate_ai_quiz():
         messages=[{"role": "user", "content": QUIZ_PROMPT}],
         temperature=0.7
     )
-
     content = response.choices[0].message.content
     content = content.replace("```json", "").replace("```", "").strip()
-
     return json.loads(content)
-
 
 # =========================
 # AIクイズをSupabaseに保存
@@ -73,7 +70,6 @@ def save_ai_quiz_to_supabase(quizzes):
             "explanation": q["explanation"]
         }).execute()
 
-
 # =========================
 # Supabase 接続
 # =========================
@@ -82,9 +78,8 @@ supabase = create_client(
     st.secrets["SUPABASE_KEY"]
 )
 
-
 # =========================
-# Supabaseから問題を取得（安全版）
+# Supabaseから問題を取得
 # =========================
 def load_questions_from_supabase():
     try:
@@ -112,7 +107,6 @@ def load_questions_from_supabase():
         st.error(f"Supabase から問題を取得できませんでした: {e}")
         return []
 
-
 # =========================
 # session_state 初期化
 # =========================
@@ -128,12 +122,10 @@ if "current_index" not in st.session_state:
 if "questions_supabase" not in st.session_state:
     st.session_state.questions_supabase = load_questions_from_supabase()
 
-
 # =========================
 # タイトル
 # =========================
 st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
-
 
 # =========================
 # 出題ソース切替UI
@@ -146,9 +138,8 @@ else:
 
 st.session_state.current_questions = current_questions
 
-
 # =========================
-# 🤖 AI生成＆保存ボタン（RateLimitError対応）
+# AI生成ボタン（RateLimitError対応）
 # =========================
 if st.button("🤖 AIでクイズを生成して保存"):
     with st.spinner("AIがクイズを生成しています..."):
@@ -159,7 +150,8 @@ if st.button("🤖 AIでクイズを生成して保存"):
             st.success("AIクイズをSupabaseに保存しました！")
         except RateLimitError:
             st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
-
+        except Exception as e:
+            st.error(f"AIクイズ生成中にエラーが発生しました: {e}")
 
 # =========================
 # 問題取得
@@ -170,14 +162,12 @@ if not st.session_state.current_questions:
 
 q = st.session_state.current_questions[st.session_state.current_index]
 
-
 # =========================
 # 問題表示
 # =========================
 st.write(q["question"])
 st.code(q["code"], language="python")
 user_answer = st.text_input("空欄を埋めてください", key=st.session_state.current_index)
-
 
 # =========================
 # ヒント
@@ -189,35 +179,28 @@ if st.button("ヒントを見る"):
 for i in range(st.session_state.hint_index):
     st.info(f"ヒント {i+1}: {q['hints'][i]}")
 
-
 # =========================
 # 回答処理（Supabase保存）
 # =========================
 if st.button("回答する") and not st.session_state.answered:
     st.session_state.answered = True
-
     is_correct = user_answer.strip() == q["answer"]
-
     supabase.table("quiz_logs").insert({
         "question_id": q["id"],
         "is_correct": is_correct,
         "answered_at": datetime.utcnow().isoformat()
     }).execute()
-
     if is_correct:
         st.success("正解！🎉")
     else:
         st.error("不正解 😢")
         st.write("正解:", q["answer"])
-
     st.info(q["explanation"])
 
-
 # =========================
-# ナビゲーション（前 / 次）
+# ナビゲーション
 # =========================
 col1, col2 = st.columns(2)
-
 with col1:
     if st.button("← 前の問題"):
         if st.session_state.current_index > 0:
@@ -234,12 +217,10 @@ with col2:
             st.session_state.answered = False
             st.rerun()
 
-
 # =========================
 # 復習モード
 # =========================
 st.divider()
-
 if st.button("復習モード"):
     res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
     wrong_ids = {row["question_id"] for row in res.data}
