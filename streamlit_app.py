@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from supabase import create_client
-from question import questions  # 固定問題リスト
+from question import questions
 
 # =========================
 # Supabase 接続
@@ -22,44 +22,43 @@ if "current_index" not in st.session_state:
 if "questions_supabase" not in st.session_state:
     st.session_state.questions_supabase = questions
 
-# =========================
-# タイトル
-# =========================
-st.title("🧠 Python 文法 穴埋めクイズ")
-
-# =========================
-# 出題問題セット
-# =========================
 current_questions = st.session_state.questions_supabase
 
 # =========================
-# 進捗バー表示
+# ページタイトル & 説明
+# =========================
+st.markdown("<h1 style='text-align: center; color: #4B8BBE;'>🧠 Python 文法クイズ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; font-size:16px;'>穴埋め形式でPython文法を学習しよう！</p>", unsafe_allow_html=True)
+st.divider()
+
+# =========================
+# 進捗バー
 # =========================
 progress = (st.session_state.current_index + 1) / len(current_questions)
 st.progress(progress)
 st.markdown(f"**問題 {st.session_state.current_index + 1} / {len(current_questions)}**")
 
 # =========================
-# 現在の問題取得
+# 現在の問題表示
 # =========================
 q = current_questions[st.session_state.current_index]
 
-st.write(q["question"])
+st.markdown(f"### {q['question']}")
 st.code(q["code"], language="python")
 
 user_answer = st.text_input("空欄を埋めてください", key=st.session_state.current_index)
 
 # =========================
-# ヒント折りたたみ
+# ヒントを折りたたみ表示
 # =========================
-with st.expander("ヒントを表示"):
+with st.expander("💡 ヒントを見る"):
     for i, hint in enumerate(q["hints"], start=1):
         st.info(f"ヒント {i}: {hint}")
 
 # =========================
 # 回答処理
 # =========================
-if st.button("回答する") and not st.session_state.answered:
+if st.button("✅ 回答する") and not st.session_state.answered:
     st.session_state.answered = True
     is_correct = user_answer.strip() == q["answer"]
     supabase.table("quiz_logs").insert({
@@ -68,45 +67,40 @@ if st.button("回答する") and not st.session_state.answered:
         "answered_at": datetime.utcnow().isoformat()
     }).execute()
     if is_correct:
-        st.success("正解！🎉")
+        st.success("🎉 正解！")
     else:
-        st.error("不正解 😢")
-        st.write("正解:", q["answer"])
+        st.error(f"❌ 不正解。正解は: {q['answer']}")
 
 # =========================
-# 解説折りたたみ
+# 解説を折りたたみ
 # =========================
-with st.expander("解説"):
+with st.expander("📖 解説を見る"):
     st.write(q["explanation"])
 
 # =========================
-# ナビゲーション
-col1, col2 = st.columns(2)
+# ナビゲーションボタン（横並び・カラー）
+col1, col2, col3 = st.columns([1,1,1])
 with col1:
-    if st.button("← 前の問題"):
+    if st.button("⬅ 前の問題"):
         if st.session_state.current_index > 0:
             st.session_state.current_index -= 1
             st.session_state.answered = False
             st.rerun()
 with col2:
-    if st.button("次の問題 →"):
+    if st.button("次の問題 ➡"):
         if st.session_state.current_index < len(current_questions) - 1:
             st.session_state.current_index += 1
             st.session_state.answered = False
             st.rerun()
-
-# =========================
-# 復習モード
-# =========================
-st.divider()
-if st.button("復習モード"):
-    res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
-    wrong_ids = {row["question_id"] for row in res.data}
-    wrongs = [i for i, qq in enumerate(current_questions) if qq["id"] in wrong_ids]
-    if wrongs:
-        st.session_state.current_index = wrongs[0]
-        st.session_state.answered = False
-        st.session_state.mode = "review"
-        st.rerun()
-    else:
-        st.info("復習する問題はありません 🎉")
+with col3:
+    if st.button("🔄 復習モード"):
+        res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
+        wrong_ids = {row["question_id"] for row in res.data}
+        wrongs = [i for i, qq in enumerate(current_questions) if qq["id"] in wrong_ids]
+        if wrongs:
+            st.session_state.current_index = wrongs[0]
+            st.session_state.answered = False
+            st.session_state.mode = "review"
+            st.rerun()
+        else:
+            st.info("復習する問題はありません 🎉")
