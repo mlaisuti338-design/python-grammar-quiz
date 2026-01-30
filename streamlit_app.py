@@ -91,17 +91,17 @@ if st.session_state.mode in ["normal", "review"] and current_questions:
             if st.session_state.current_index > 0:
                 st.session_state.current_index -= 1
                 st.session_state.answered = False
-                st.rerun()
+                st.experimental_rerun()
     with col2:
         if st.button("次の問題 ➡"):
             if st.session_state.current_index < len(current_questions) - 1:
                 st.session_state.current_index += 1
                 st.session_state.answered = False
-                st.rerun()
+                st.experimental_rerun()
             else:
                 # 最後の問題を解いたらまとめページへ
                 st.session_state.mode = "summary"
-                st.rerun()
+                st.experimental_rerun()
 
 # =========================
 # まとめページ
@@ -127,13 +127,13 @@ elif st.session_state.mode == "summary":
                 st.experimental_rerun()
         with col2:
             if st.button("🏁 終了"):
-                #ページ状態リセット
+                # ページ状態リセット（rerun しない）
                 st.session_state.mode = "normal"
                 st.session_state.current_index = 0
                 st.session_state.answered = False
                 st.session_state.review_questions = []
                 st.session_state.correct_count = 0
-                st.experimental_rerun()  # トップに戻す
+                st.success("トップページに戻りました")
     else:
         st.info("全問正解です！お疲れさまでした 🎉")
         if st.button("🏁 終了"):
@@ -142,12 +142,17 @@ elif st.session_state.mode == "summary":
             st.session_state.answered = False
             st.session_state.review_questions = []
             st.session_state.correct_count = 0
-            st.experimental_rerun()
+            st.success("トップページに戻りました")
 
 # =========================
-# 復習モード終了
+# 復習モード終了（復習対象なし）
 # =========================
 elif st.session_state.mode == "review" and not current_questions:
     st.info("復習モードの問題はありません 🎉")
     if st.button("🏁 終了"):
-        st.experimental_rerun()
+        st.session_state.mode = "normal"
+        st.session_state.current_index = 0
+        st.session_state.answered = False
+        st.session_state.review_questions = []
+        st.session_state.correct_count = 0
+        st.success("トップページに戻りました")
