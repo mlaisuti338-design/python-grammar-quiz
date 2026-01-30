@@ -68,23 +68,28 @@ else:
     st.progress(progress_value)
     st.markdown(f"<p style='text-align:center;'>問題 {idx + 1} / {total_questions} ({int(progress_value*100)}%)</p>", unsafe_allow_html=True)
     
-    # 問題文は元のデザイン
+    # 問題文
     st.write(q["question"])
     st.code(q["code"], language="python")
     
     # 回答入力
     user_answer = st.text_input("空欄を埋めてください", key=idx)
     
-    # ヒントを折りたたみ
+    # =========================
+    # ヒント（段階的表示）
+    # =========================
     with st.expander("💡 ヒントを見る"):
+        # ヒントを1つずつ増やすボタン
+        if st.session_state.hint_index < len(q["hints"]):
+            if st.button("次のヒント", key=f"hint_btn_{idx}"):
+                st.session_state.hint_index += 1
+
+        # 現在のヒントを表示
         for i in range(st.session_state.hint_index):
             st.info(f"ヒント {i+1}: {q['hints'][i]}")
-    if st.button("ヒントを見る"):
-        if st.session_state.hint_index < len(q["hints"]):
-            st.session_state.hint_index += 1
     
     # 回答処理
-    if st.button("✅ 回答する") and not st.session_state.answered:
+    if st.button("✅ 回答する", key=f"answer_btn_{idx}") and not st.session_state.answered:
         st.session_state.answered = True
         is_correct = user_answer.strip() == q["answer"]
 
