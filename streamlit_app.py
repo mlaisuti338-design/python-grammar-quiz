@@ -16,11 +16,12 @@ supabase = create_client(
 # =========================
 if "current_index" not in st.session_state:
     st.session_state.current_index = 0
-    st.session_state.answered = False
-    st.session_state.mode = "normal"
-
+if "mode" not in st.session_state:
+    st.session_state.mode = "normal"  # normal, review
 if "questions_supabase" not in st.session_state:
     st.session_state.questions_supabase = questions
+if "answered_flags" not in st.session_state:
+    st.session_state.answered_flags = [False] * len(st.session_state.questions_supabase)
 
 current_questions = st.session_state.questions_supabase
 
@@ -58,9 +59,10 @@ with st.expander("💡 ヒントを見る"):
 # =========================
 # 回答処理
 # =========================
-if st.button("✅ 回答する") and not st.session_state.answered:
-    st.session_state.answered = True
-    is_correct = user_answer.strip() == q["answer"]
+if st.button("✅ 回答する") and not st.session_state.answered_flags[st.session_state.current_index]:
+    st.session_state.answered_flags[st.session_state.current_index] = True
+    is_correct = user_answer.strip().lower() == q["answer"].strip().lower()
+    # Supabase に保存
     supabase.table("quiz_logs").insert({
         "question_id": q["id"],
         "is_correct": is_correct,
@@ -78,29 +80,34 @@ with st.expander("📖 解説を見る"):
     st.write(q["explanation"])
 
 # =========================
-# ナビゲーションボタン（横並び・カラー）
+# ナビゲーションボタン
 col1, col2, col3 = st.columns([1,1,1])
+
 with col1:
     if st.button("⬅ 前の問題"):
         if st.session_state.current_index > 0:
             st.session_state.current_index -= 1
-            st.session_state.answered = False
-            st.rerun()
+            st.session_state.answered_flags[st.session_state.current_index] = False
+            st.experimental_rerun()
+
 with col2:
     if st.button("次の問題 ➡"):
         if st.session_state.current_index < len(current_questions) - 1:
             st.session_state.current_index += 1
-            st.session_state.answered = False
-            st.rerun()
+            st.session_state.answered_flags[st.session_state.current_index] = False
+            st.experimental_rerun()
+
 with col3:
     if st.button("🔄 復習モード"):
+        # Supabase から不正解の問題を取得
         res = supabase.table("quiz_logs").select("question_id").eq("is_correct", False).execute()
         wrong_ids = {row["question_id"] for row in res.data}
-        wrongs = [i for i, qq in enumerate(current_questions) if qq["id"] in wrong_ids]
-        if wrongs:
-            st.session_state.current_index = wrongs[0]
-            st.session_state.answered = False
+        wrong_questions = [i for i, qq in enumerate(current_questions) if qq["id"] in wrong_ids]
+        if wrong_questions:
+            st.session_state.current_index = wrong_questions[0]
             st.session_state.mode = "review"
-            st.rerun()
+            # 復習用に全て未回答にリセット
+            st.session_state.answered_flags = [False] * len(current_questions)
+            st.experimental_rerun()
         else:
             st.info("復習する問題はありません 🎉")
