@@ -4,6 +4,7 @@ from supabase import create_client
 from question import questions
 import openai
 import json
+from openai.error import RateLimitError
 
 # =========================
 # OpenAI 設定
@@ -41,9 +42,9 @@ JSON形式:
 # =========================
 def generate_ai_quiz():
     response = openai.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[{"role": "user", "content": QUIZ_PROMPT}],
-    temperature=0.7
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": QUIZ_PROMPT}],
+        temperature=0.7
     )
 
     content = response.choices[0].message.content
@@ -76,7 +77,7 @@ supabase = create_client(
 
 
 # =========================
-# Supabaseから問題を取得
+# Supabaseから問題を取得（安全版）
 # =========================
 def load_questions_from_supabase():
     try:
@@ -106,18 +107,6 @@ def load_questions_from_supabase():
 
 
 # =========================
-# タイトル
-# =========================
-st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
-
-
-# =========================
-# 出題ソース切替UI
-# =========================
-source = st.radio("出題する問題セットを選択", ["固定問題", "AI生成問題（Supabase）"])
-
-
-# =========================
 # session_state 初期化
 # =========================
 if "current_index" not in st.session_state:
@@ -134,8 +123,15 @@ if "questions_supabase" not in st.session_state:
 
 
 # =========================
-# current_questionsにセット
+# タイトル
 # =========================
+st.title("🧠 Python 文法 穴埋めクイズ（履歴保存・戻れる版）")
+
+
+# =========================
+# 出題ソース切替UI
+# =========================
+source = st.radio("出題する問題セットを選択", ["固定問題", "AI生成問題（Supabase）"])
 if source == "固定問題":
     current_questions = questions
 else:
@@ -145,15 +141,17 @@ st.session_state.current_questions = current_questions
 
 
 # =========================
-# 🤖 AI生成＆保存ボタン
+# 🤖 AI生成＆保存ボタン（RateLimitError対応）
 # =========================
 if st.button("🤖 AIでクイズを生成して保存"):
     with st.spinner("AIがクイズを生成しています..."):
-        quizzes = generate_ai_quiz()
-        save_ai_quiz_to_supabase(quizzes)
-        # 保存後にsession_stateを更新
-        st.session_state.questions_supabase = load_questions_from_supabase()
-    st.success("AIクイズをSupabaseに保存しました！")
+        try:
+            quizzes = generate_ai_quiz()
+            save_ai_quiz_to_supabase(quizzes)
+            st.session_state.questions_supabase = load_questions_from_supabase()
+            st.success("AIクイズをSupabaseに保存しました！")
+        except RateLimitError:
+            st.error("APIの呼び出し制限に達しました。少し時間を置いて再度お試しください。")
 
 
 # =========================
