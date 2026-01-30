@@ -330,3 +330,4 @@ questions = [
         "explanation": "strip() を使うと文字列の前後の空白を削除できます。"
     }
 ]
+
